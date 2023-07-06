@@ -1,0 +1,25 @@
+.layoutStyle {
+  width: 1010px;
+  background-color: #ffffff;
+}
+
+.headerStyle {
+  text-align: center;
+  color: #000;
+  background-color: #ffffff;
+  height: auto;
+}
+
+.contentStyle {
+  color: #000;
+  background-color: #ffffff;
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+}
+
+.footerStyle {
+  text-align: center;
+  color: #000;
+  background-color: #ffffff;
+}
