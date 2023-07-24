@@ -24,6 +24,19 @@ export default class MovieDbService extends React.Component {
   async getMovies(query = '', page = 1) {
     const res = await this.getResource(query, page);
 
-    return res.results;
+    return res.results.map(this.transformMovies);
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  transformMovies(movies) {
+    return {
+      id: movies.id,
+      title: movies.title,
+      date: movies.release_date,
+      genre: ['Action', 'Drama'],
+      description: movies.overview,
+      poster: movies.poster_path,
+      vote: movies.vote_average,
+    };
   }
 }

@@ -16,6 +16,7 @@ export default class App extends React.Component {
     this.state = {
       movies: [],
       query: '',
+      apiPage: 1,
       page: 1,
       pageSize: 6,
       tabs: ['Search', 'Rated'],
@@ -31,28 +32,42 @@ export default class App extends React.Component {
   }
 
   onEditPage(newPage) {
-    this.setState(({ movies, pageSize }) => {
-      if (movies.length - newPage * pageSize < 0) return { loading: true };
+    const { movies, pageSize, query, apiPage } = this.state;
 
-      return { loading: false };
-    });
+    const checkMovies = movies.length - newPage * pageSize;
 
-    this.setState(({ movies, query, pageSize }) => {
-      let checkMovies = movies.length - newPage * pageSize;
-      if (checkMovies < 0) {
-        const apiPage = movies.length / 20;
+    if (checkMovies < 0 && movies.length >= apiPage * 20) {
+      this.setState({ loading: true });
+      const iterate = Math.abs(Math.floor(checkMovies / 20));
 
-        // eslint-disable-next-line no-plusplus
-        for (let i = 1; checkMovies < 0; i++) {
-          this.addMovies(query, apiPage + i);
-          checkMovies += 20;
-        }
+      // eslint-disable-next-line no-plusplus
+      for (let i = 1; i <= iterate; i++) {
+        this.moviesDb
+          .getMovies(query, apiPage + i)
+          .then((newMovies) => {
+            // eslint-disable-next-line no-shadow
+            this.setState(({ movies }) => {
+              let currentPage = newPage;
+              const pages = Math.ceil(movies.length / pageSize);
+
+              if (currentPage > pages) currentPage = pages;
+
+              return {
+                movies: [...movies, ...newMovies],
+                apiPage: apiPage + i,
+                page: currentPage,
+                loading: false,
+              };
+            });
+          })
+          .catch((err) => {
+            // eslint-disable-next-line no-console
+            console.error(`Could not fetch ${err}`);
+          });
       }
-
-      return {
-        page: newPage,
-      };
-    });
+    } else {
+      this.setState({ page: newPage });
+    }
   }
 
   onEditPageSize(current, pageSize) {
@@ -61,22 +76,26 @@ export default class App extends React.Component {
     });
   }
 
-  onEditQuery(query) {
-    const state = (newArr) => {
-      this.setState(() => {
-        return {
-          movies: newArr,
-          query,
-          page: 1,
-          loading: false,
-        };
-      });
-    };
-
+  onEditQuery(search) {
     // eslint-disable-next-line react/destructuring-assignment
-    if (this.state.query !== query) {
+    if (this.state.query !== search) {
       this.setState({ loading: true });
-      this.requestMovies(query, 1, state);
+
+      this.moviesDb
+        .getMovies(search, 1)
+        .then((movies) => {
+          this.setState({
+            movies,
+            query: search,
+            page: 1,
+            apiPage: 1,
+            loading: false,
+          });
+        })
+        .catch((err) => {
+          // eslint-disable-next-line no-console
+          console.error(`Could not fetch ${err}`);
+        });
     }
   }
 
@@ -105,49 +124,10 @@ export default class App extends React.Component {
     });
   }
 
-  addMovies(query, page) {
-    const state = (newArr) => {
-      this.setState(({ movies }) => {
-        return {
-          movies: movies.concat(newArr),
-          loading: false,
-        };
-      });
-    };
-
-    this.requestMovies(query, page, state);
-  }
-
-  requestMovies(query, page, cbFunc) {
-    this.moviesDb
-      .getMovies(query, page)
-      .then((moviesPage) => {
-        const newArr = [];
-
-        moviesPage.forEach((m) => {
-          newArr.push({
-            id: m.id,
-            title: m.title,
-            date: m.release_date,
-            genre: ['Action', 'Drama'],
-            description: m.overview,
-            poster: m.poster_path,
-            vote: m.vote_average,
-          });
-        });
-
-        cbFunc(newArr);
-      })
-      .catch((err) => {
-        // eslint-disable-next-line no-console
-        console.error(`Could not fetch ${err}`);
-      });
-  }
-
   render() {
     const { Header, Footer, Content } = Layout;
 
-    const { movies, page, pageSize, tabs, selectedTab, rated, loading } = this.state;
+    const { movies, page, pageSize, apiPage, tabs, selectedTab, rated, loading } = this.state;
 
     return (
       <Space
@@ -183,6 +163,7 @@ export default class App extends React.Component {
             <MovieFooter
               page={page}
               pageSize={pageSize}
+              apiPage={apiPage}
               moviesLength={movies.length}
               selectedTab={selectedTab}
               onEditPage={this.onEditPage}

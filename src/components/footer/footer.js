@@ -19,8 +19,9 @@ export default class MovieFooter extends React.Component {
   }
 
   render() {
-    const { page, pageSize, moviesLength, selectedTab } = this.props;
-    const total = moviesLength % 20 ? moviesLength : 100;
+    const { page, pageSize, apiPage, moviesLength, selectedTab } = this.props;
+
+    const total = apiPage * 20 > moviesLength ? moviesLength : 100;
 
     const navigation = (
       <Pagination
