@@ -50,7 +50,7 @@ export default class App extends React.Component {
               let currentPage = newPage;
               const pages = Math.ceil(movies.length / pageSize);
 
-              if (currentPage > pages) currentPage = pages;
+              if (currentPage > pages && newMovies.length === 0) currentPage = pages;
 
               return {
                 movies: [...movies, ...newMovies],
