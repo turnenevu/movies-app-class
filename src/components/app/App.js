@@ -1,10 +1,13 @@
 import React from 'react';
-import { Layout, Space, Spin } from 'antd';
+import { Layout, Space, Spin, Alert } from 'antd';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { Offline, Online } from 'react-detect-offline';
 
 import MovieDbService from '../../serivices/movie-db-service';
 import MovieHeader from '../header';
 import ItemList from '../item-list';
 import MovieFooter from '../footer';
+import ThrowError from '../error';
 
 import './App.css';
 
@@ -23,6 +26,12 @@ export default class App extends React.Component {
       selectedTab: 'Search',
       rated: [],
       loading: false,
+      error: {
+        status: false,
+        name: '',
+        message: '',
+        stack: '',
+      },
     };
     this.onEditPage = this.onEditPage.bind(this);
     this.onEditPageSize = this.onEditPageSize.bind(this);
@@ -57,12 +66,22 @@ export default class App extends React.Component {
                 apiPage: apiPage + i,
                 page: currentPage,
                 loading: false,
+                error: {
+                  status: false,
+                },
               };
             });
           })
           .catch((err) => {
-            // eslint-disable-next-line no-console
-            console.error(`Could not fetch ${err}`);
+            this.setState({
+              error: {
+                status: true,
+                name: err.name,
+                message: err.message,
+                stack: err.stack,
+              },
+              loading: false,
+            });
           });
       }
     } else {
@@ -90,11 +109,21 @@ export default class App extends React.Component {
             page: 1,
             apiPage: 1,
             loading: false,
+            error: {
+              status: false,
+            },
           });
         })
         .catch((err) => {
-          // eslint-disable-next-line no-console
-          console.error(`Could not fetch ${err}`);
+          this.setState({
+            error: {
+              status: true,
+              name: err.name,
+              message: err.message,
+              stack: err.stack,
+            },
+            loading: false,
+          });
         });
     }
   }
@@ -126,8 +155,25 @@ export default class App extends React.Component {
 
   render() {
     const { Header, Footer, Content } = Layout;
+    const { ErrorBoundary } = Alert;
 
-    const { movies, page, pageSize, apiPage, tabs, selectedTab, rated, loading } = this.state;
+    const { movies, page, pageSize, apiPage, tabs, selectedTab, rated, loading, error } = this.state;
+
+    const hasData = error.status ? (
+      <ErrorBoundary>
+        <ThrowError error={error} />
+      </ErrorBoundary>
+    ) : (
+      // <Alert message="Error" description={error.description} type="error" showIcon />
+      <ItemList
+        movies={movies}
+        page={page}
+        pageSize={pageSize}
+        selectedTab={selectedTab}
+        rated={rated}
+        setRated={this.setRated}
+      />
+    );
 
     return (
       <Space
@@ -138,39 +184,36 @@ export default class App extends React.Component {
         }}
         size={[0, 48]}
       >
-        <Layout className="layoutStyle">
-          <Header className="headerStyle">
-            <MovieHeader
-              tabs={tabs}
-              selectedTab={selectedTab}
-              onEditQyery={this.onEditQuery}
-              onEditTab={this.onEditTab}
-            />
-          </Header>
-          <Content className="contentStyle">
-            <Spin tip="Loading" size="large" spinning={loading}>
-              <ItemList
-                movies={movies}
+        <Online>
+          <Layout className="layoutStyle">
+            <Header className="headerStyle">
+              <MovieHeader
+                tabs={tabs}
+                selectedTab={selectedTab}
+                onEditQyery={this.onEditQuery}
+                onEditTab={this.onEditTab}
+              />
+            </Header>
+            <Content className="contentStyle">
+              <Spin tip="Loading" size="large" spinning={loading}>
+                {hasData}
+              </Spin>
+            </Content>
+            <Footer className="footerStyle">
+              <MovieFooter
                 page={page}
                 pageSize={pageSize}
+                apiPage={apiPage}
+                moviesLength={movies.length}
                 selectedTab={selectedTab}
-                rated={rated}
-                setRated={this.setRated}
+                onEditPage={this.onEditPage}
+                onEditPageSize={this.onEditPageSize}
               />
-            </Spin>
-          </Content>
-          <Footer className="footerStyle">
-            <MovieFooter
-              page={page}
-              pageSize={pageSize}
-              apiPage={apiPage}
-              moviesLength={movies.length}
-              selectedTab={selectedTab}
-              onEditPage={this.onEditPage}
-              onEditPageSize={this.onEditPageSize}
-            />
-          </Footer>
-        </Layout>
+            </Footer>
+          </Layout>
+        </Online>
+        {/* eslint-disable-next-line react/no-unescaped-entities */}
+        <Offline>You're offline right now. Check your connection.</Offline>
       </Space>
     );
   }
