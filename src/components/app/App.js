@@ -1,13 +1,12 @@
 import React from 'react';
 import { Layout, Space, Spin, Alert } from 'antd';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { Offline, Online } from 'react-detect-offline';
 
 import MovieDbService from '../../serivices/movie-db-service';
 import MovieHeader from '../header';
 import ItemList from '../item-list';
 import MovieFooter from '../footer';
 import ThrowError from '../error';
+import NetworkStatus from '../network-status';
 
 import './App.css';
 
@@ -157,7 +156,7 @@ export default class App extends React.Component {
     const { Header, Footer, Content } = Layout;
     const { ErrorBoundary } = Alert;
 
-    const { movies, page, pageSize, apiPage, tabs, selectedTab, rated, loading, error } = this.state;
+    const { movies, query, page, pageSize, apiPage, tabs, selectedTab, rated, loading, error } = this.state;
 
     const hasData = error.status ? (
       <ErrorBoundary>
@@ -184,36 +183,56 @@ export default class App extends React.Component {
         }}
         size={[0, 48]}
       >
-        <Online>
-          <Layout className="layoutStyle">
-            <Header className="headerStyle">
-              <MovieHeader
-                tabs={tabs}
-                selectedTab={selectedTab}
-                onEditQyery={this.onEditQuery}
-                onEditTab={this.onEditTab}
-              />
-            </Header>
-            <Content className="contentStyle">
-              <Spin tip="Loading" size="large" spinning={loading}>
-                {hasData}
-              </Spin>
-            </Content>
-            <Footer className="footerStyle">
-              <MovieFooter
-                page={page}
-                pageSize={pageSize}
-                apiPage={apiPage}
-                moviesLength={movies.length}
-                selectedTab={selectedTab}
-                onEditPage={this.onEditPage}
-                onEditPageSize={this.onEditPageSize}
-              />
-            </Footer>
-          </Layout>
-        </Online>
-        {/* eslint-disable-next-line react/no-unescaped-entities */}
-        <Offline>You're offline right now. Check your connection.</Offline>
+        <NetworkStatus>
+          {({ online }) => (
+            <Layout className="layoutStyle">
+              <Header className="headerStyle">
+                <MovieHeader
+                  tabs={tabs}
+                  selectedTab={selectedTab}
+                  onEditQyery={this.onEditQuery}
+                  onEditTab={this.onEditTab}
+                  network={online}
+                />
+                {online ? null : (
+                  <Alert
+                    message="Warning"
+                    description="You're offline right now. Check your connection."
+                    type="warning"
+                    showIcon
+                    closable
+                  />
+                )}
+              </Header>
+              <Content className="contentStyle">
+                <Spin tip="Loading" size="large" spinning={loading}>
+                  {movies.length === 0 && query && selectedTab === 'Search' ? (
+                    <Alert
+                      message="No movies match your search"
+                      description={`Nothing found for "${query}"`}
+                      type="info"
+                      showIcon
+                    />
+                  ) : (
+                    hasData
+                  )}
+                </Spin>
+              </Content>
+              <Footer className="footerStyle">
+                <MovieFooter
+                  page={page}
+                  pageSize={pageSize}
+                  apiPage={apiPage}
+                  moviesLength={movies.length}
+                  selectedTab={selectedTab}
+                  onEditPage={this.onEditPage}
+                  onEditPageSize={this.onEditPageSize}
+                  network={online}
+                />
+              </Footer>
+            </Layout>
+          )}
+        </NetworkStatus>
       </Space>
     );
   }

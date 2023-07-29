@@ -19,7 +19,7 @@ export default class MovieFooter extends React.Component {
   }
 
   render() {
-    const { page, pageSize, apiPage, moviesLength, selectedTab } = this.props;
+    const { page, pageSize, apiPage, moviesLength, selectedTab, network } = this.props;
 
     const total = apiPage * 20 > moviesLength ? moviesLength : 100;
 
@@ -33,7 +33,7 @@ export default class MovieFooter extends React.Component {
         total={total}
         pageSize={pageSize}
         pageSizeOptions={[6, 10, 20]}
-        disabled={!moviesLength}
+        disabled={!moviesLength || !network}
       />
     );
     return <div>{selectedTab === 'Search' ? navigation : null}</div>;

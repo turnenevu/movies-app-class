@@ -31,7 +31,7 @@ export default class MovieHeader extends React.Component {
 
   render() {
     const { Search } = Input;
-    const { tabs, selectedTab } = this.props;
+    const { tabs, selectedTab, network } = this.props;
     const { value } = this.state;
 
     const search = (
@@ -43,6 +43,7 @@ export default class MovieHeader extends React.Component {
         onChange={this.onSearch}
         onSearch={this.onSearch}
         autoFocus
+        disabled={!network}
       />
     );
     return (
